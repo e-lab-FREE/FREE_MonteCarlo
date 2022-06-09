@@ -1,0 +1,232 @@
+{% extends 'free/experiment.html' %}
+{% load static %}
+{% load i18n %}
+
+
+{% block experiment_head %}
+    <!-- Dev_montecarlo libraries -->
+
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+    <!-- slider  -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fomantic-ui/2.8.4/components/slider.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fomantic-ui/2.8.4/components/slider.min.css">
+    <!-- Dev_montecarlo libraries -->
+
+{% endblock %}  
+
+{% block configtab %}
+<!-- Begin of the configuration tab-->
+ 
+        <div class="ui two column grid container">
+            <div class="column">
+                <div class="ui segment">
+                    <h3>{% trans 'Radius'%}</h3>
+                    <div class="ui labeled slider" id="slider-R"></div>
+                        <br></br>
+                        <div class="ui input">
+                            <input class="free-input" type="number" id="R" placeholder="0">
+                        </div>
+                </div>
+            </div>
+            <div class="column">
+                <div class="ui segment">
+                    <h3>{% trans 'Number of Samples N'%}</h3>
+                    <div class="ui labeled  slider" id="slider-Iteration"></div>
+                        <br></br>
+                        <div class="ui input">
+                            <input class="free-input" type="number" id="Iteration" placeholder="0">
+                        </div>
+                </div>
+            </div>
+        </div>
+
+<!-- End of the configuration tab-->
+{% endblock %}
+
+
+
+<!-- Begin of the execution tab-->
+{% block executiontab %}
+    <div class="ui grid stackable">
+        <div class=" ten wide column">
+            <div id="plot_1">  </div>
+        </div>
+        <div class=" three wide column ">
+            <div>
+                <div>
+                    Points in : <span id="mc_point_in">0</span>
+                </div> </br>
+                <div>
+                    Total points : <span id="mc_total_point">0</span>
+                </div> </br>
+                <div>
+                PI: <span id="mc_pi">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <table id="results_table" class="ui celled table " style="width:100%">
+        <thead>
+            <tr>
+                <th id="Sample_number">{% trans "Sample Number" %}</th>
+                <th id="eX">{% trans "x" %}</th>
+                <th id="eY">{% trans "y" %}</th>
+                <th  id="circ">{% trans "In cir" %}</th>
+            </tr>
+        </thead>
+    </table>
+{% endblock %}   
+<!-- End of the execution tab-->
+
+
+
+{% block protocol_auxiliary_functions %}
+
+<script>
+
+
+
+    var  mc_total_point = 0;
+    var mc_point_in = 0;
+
+    // should be defined for each experiment
+    function process_partial_data(data_line){
+        console.log("updating plot")
+        in_out = parseInt(data_line.value.circ) 
+        x = parseFloat(data_line.value.eX)
+        y = parseFloat(data_line.value.eY)
+        if (in_out != undefined){
+            Plotly.extendTraces("plot_1", {x: [[x]],y: [[y]]}, [in_out]);
+        }
+        if(in_out == 1){
+            mc_point_in ++
+        }
+        mc_total_point ++
+        pi = 4* mc_point_in/mc_total_point
+        $("#mc_pi").text(pi)
+        $("#mc_point_in").text(mc_point_in)
+        $("#mc_total_point").text(mc_total_point)
+        
+
+    }
+
+
+    // should be defined for each experiment
+    function process_final_data(data_line){
+        console.log("final updating plot")
+    }
+
+    function buildPlot(R,plotdiv) {
+        console.log("JJJJJJJ")
+        var dados_f = [];
+                for (let i=0; i < 2; i++){
+                    if (i === 1){
+                        name= "IN";
+                        color = "rgb(0, 204, 0)";
+                    }
+                    else{
+                        name = "OUT";
+                        color = "rgb(255, 0, 0)";
+                    }
+                    dados_f.push({
+                            name: name,
+                            x: [],
+                            y: [],
+                            marker: {
+                            color: color,
+                            size: 5,
+                            },
+                            line: {
+                            color: color,
+                            width: 0,
+                            },
+                            mode: 'lines+markers',
+                            type: 'scatter',
+                        });
+                }
+                var layout = {
+                    autosize: false,
+                    xaxis: {
+                        title: 'x', 
+                        showticklabels: true,
+                        exponentformat: 'e',
+                        showexponent: 'all',
+                        range: [-R, R]
+                    },
+                    yaxis: {
+                        scaleanchor:"x",
+                        scaleratio:1,
+                        title: 'y',
+                        showticklabels: true,
+                        range: [-R, R]
+                    },
+                    shapes: [
+                        {
+                            type: 'circle',
+                            xref: 'x',
+                            yref: 'y',
+                            x0: -R,
+                            y0: -R,
+                            x1: R,
+                            y1: R,
+                            line: {
+                            color: "rgb(0, 204, 0)",
+                            width: 1
+                            }
+                        },
+                        {
+                            type: 'rect',
+                            x0: -R,
+                            y0: -R,
+                            x1: R,
+                            y1: R,
+                            line: {
+                            color: 'rgba(128, 0, 128, 1)'
+                            }
+        
+                        }
+                    ],
+                };
+                console.log(dados_f);
+                Plotly.newPlot(plotdiv, dados_f, layout, {responsive: true});
+    }
+    
+    function on_save_experiment_UI(){
+        R = parseInt(current_execution.config.R)
+        buildPlot(R,"plot_1");
+    }
+
+    function on_ready_experiment_UI(){
+        configure_slider("Iteration")
+        configure_slider("R")
+        R = parseInt(protocol_input_arguments.R.maximum)
+        buildPlot(R,"plot_1");
+    }
+
+    function configure_slider(name){
+        $('#slider-'+name).slider({
+            min:  protocol_input_arguments[name].minimum,
+            max: protocol_input_arguments[name].maximum, 
+            step: protocol_input_arguments[name].multipleOf,
+            start: protocol_input_arguments[name].default,
+            input: '#'+name,
+            onChange: function(value) {
+                console.log("QQQQQQQQQQQQQQQQQQ "+value)
+                $('#'+name).prop("value", value)
+                onInputChanged()
+           }
+        })
+        $('#'+name).change(function() {
+            if($(this).val() > protocol_input_arguments[name].maximum)
+                $(this).prop("value", protocol_input_arguments[name].maximum)
+            if($(this).val() < protocol_input_arguments[name].minimum)
+                $(this).prop("value", protocol_input_arguments[name].minimum)
+            $("#slider-"+name).slider('set value', $(this).val())
+            });
+    }
+
+
+</script>
+{% endblock%}
