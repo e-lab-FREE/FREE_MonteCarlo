@@ -3,91 +3,42 @@
 {% load i18n %}
 
 
-{% block head %}
-    {{ block.super }}
+{% block experiment_head %}
+    <!-- Dev_montecarlo libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.8.0/dist/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/1.4.0/chartjs-plugin-annotation.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/1.2.1/chartjs-plugin-zoom.min.js"></script>
+
+    <!-- slider  -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fomantic-ui/2.8.4/components/slider.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fomantic-ui/2.8.4/components/slider.min.css">
+    <!-- Dev_montecarlo libraries -->
+
 {% endblock %}  
 
 {% block configtab %}
 <!-- Begin of the configuration tab-->
-    
-    <div class="ui equal width  aligned padded grid" >
-        <div class="row">
-            <div class="column ">
-
-            </div>
-            <div class="column ">
-                <div class="inline fields">
-                    <div class="field">
-                        <label>{% trans ' Apparatus: ' %}</label>
-                        <label id="apparatus-dt"> </label> 
-                        <label>{% trans '  / Protocol: ' %}</label>
-                        <label id="protocol-dt"> </label> 
+    <div class="ui two column grid container">
+        <div class="column">
+            <div class="ui segment">
+                <h3>{% trans 'Radius'%}</h3>
+                <div class="ui labeled slider free-input-aux" id="slider-R"></div>
+                    <br></br>
+                    <div class="ui input">
+                        <input class="free-input" type="number" id="R" placeholder="0">
                     </div>
-                </div>
-                <div class="inline fields">
-                    <div class="field">
-                        <label style="padding-right:10px">{% trans 'Name of execution:' %} </label>
-                        <div class="ui input" >
-                            <input type="text" id="name-of-exection"  placeholder="New Execution">
-                        </div>
-                            <div class="ui blue button" style="display: none;" onclick="save_name()" id= "saveNameButton">{% trans 'Save'%}</div>
-                    </div>
-                </div>
             </div>
         </div>
-    </div>
-
-    <div class="ui divider"></div>        
-    <div id="configuration-input" class="ui equal width center aligned padded grid">
-        <div class="row">
-            <div class="column">
-                <legend> <h3>{% trans 'Initial Displacement (cm)'%}</h3></legend>
-                <div class="ui segment">
-                    {% if final_result.id == None %}
-                        <div class="ui labeled range "  id="range-R" ></div>
-                        <br>
-                        <div class="ui input" >
-                            <input  type="number" id="R" onchange="disableButton()">
-                        </div>
-                    {% else %}
-                        <div class="ui disabled range" id="range-R"></div>
-                        <br></br>
-                        <div class="ui input">
-                            <input  type="number" id="R" disabled>
-                        </div>
-
-                    {% endif %}
-                </div>
-            </div>
-            <div class="column">
-                <legend><h3>{% trans 'Number of Samples N'%}</h3></legend>
-                <div class="ui segment">
-                    {% if final_result.id == None %}
-                        <div class="ui labeled range" id="range-Iteration" ></div>
-                        <br></br>
-                        <div class="ui input">
-                            <input  type="number" id="Iteration" onchange="disableButton()">
-                        </div>
-                    {% else %}
-                        <div class="ui disabled  range" id="range-Iteration"></div>
-                        <br></br>
-                        <div class="ui input">
-                            <input type="number" id="Iteration" disabled>
-                        </div>
-                    {% endif %}    
-                </div>
+        <div class="column">
+            <div class="ui segment">
+                <h3>{% trans 'Number of Samples N'%}</h3>
+                <div class="ui labeled  slider free-input-aux" id="slider-Iteration"></div>
+                    <br></br>
+                    <div class="ui input">
+                        <input class="free-input" type="number" id="Iteration" placeholder="0">
+                    </div>
             </div>
         </div>
-        <div class="ui hidden divider"></div>
-        <div class="row">   
-            <div class="column">
-                <div class="ui blue button" onclick="queue(config_input)" id="saveButton">{% trans 'Save'%}</div>
-                <div class="ui disabled green button" onclick="start()" id="startButton">{% trans 'Submit'%}</div>
-                <div class="ui red button" id="clearButton" onclick="restInputValeus()">{% trans 'Clear All'%}</div>
-                <div class="ui green button" style="display: none;" id="createNew" onclick="goToCreateExecuiton()">{% trans 'Create New Execution'%}</div>
-                <div class="ui red button" style="display: none;" id="deleteButton" onclick="deleteExecution()">{% trans 'Delete'%}</div>
-            </div>
-        </div>   
     </div>
 <!-- End of the configuration tab-->
 {% endblock %}
@@ -95,164 +46,214 @@
 
 
 <!-- Begin of the execution tab-->
-{% block excutiontab %}
-<div class="ui two column stackable center aligned grid segment" >
-    <div style="width: 550px; height: 700px" id="myplot"></div>
-    {% comment %} <select id="plotselect" onchange="findplot()" >
-            <option value="trace1">plot1</option>
-            <option value="trace2">trace2</option>
-            <option value="trace3">trace3</option>
-            <option value="All">All</option>
-    </select> {% endcomment %}
-
-    <div style="margin-left: 20px;">
-        <div>
-            <label id="point_in">Points in : </label>
-        </div> </br>
-        <div>
-            <label id="total_point">Total points : </label>
-        </div> </br>
-        <div>
-            <label id="pi">Pi : </label>
+{% block executiontab %}
+    <div class="ui grid stackable">
+        <div class=" ten wide column">
+            <canvas id="myChart" width="400" height="400"></canvas>
+        </div>
+        <div class=" three wide column ">
+            <div>
+                <div>
+                    Points in : <span id="mc_point_in">0</span>
+                </div> </br>
+                <div>
+                    Total points : <span id="mc_total_point">0</span>
+                </div> </br>
+                <div>
+                PI: <span id="mc_pi">0</span>
+                </div>
+            </div>
         </div>
     </div>
-    <table id="table_result_runtime" class="ui celled table" style="width:100%">
+
+    <table id="results_table" class="ui celled table " style="width:100%">
         <thead>
             <tr>
-                <th>{% trans "Sample Number" %}</th>
-                <th>{% trans "x" %}</th>
-                <th>{% trans "y" %}</th>
-                <th>{% trans "In cir" %}</th>
+                <th id="Sample_number">{% trans "Sample Number" %}</th>
+                <th id="eX">{% trans "x" %}</th>
+                <th id="eY">{% trans "y" %}</th>
+                <th  id="circ">{% trans "In cir" %}</th>
             </tr>
         </thead>
-        <tbody id="table_result">  </tbody>
     </table>
-</div>
+
 {% endblock %}   
 <!-- End of the execution tab-->
 
 
 
+{% block protocol_auxiliary_functions %}
 
-<!-- Begin of the results tab-->
-{% block resultstab %}
+<script>
 
-<div class="ui two column stackable center aligned grid segment" >
-    <div style="width: 550px; height: 700px" id="resultstab-myplot"></div>
-    {% comment %} <select id="plotselect" onchange="findplot()" >
-            <option value="trace1">plot1</option>
-            <option value="trace2">trace2</option>
-            <option value="trace3">trace3</option>
-            <option value="All">All</option>
-    </select> {% endcomment %}
+    var myChart
+    var  mc_total_point = 0;
+    var mc_point_in = 0;
 
-    <div style="margin-left: 20px;">
-        <div>
-            <label id="point_in">Points in : </label>
-        </div> </br>
-        <div>
-            <label id="total_point">Total points : </label>
-        </div> </br>
-        <div>
-            <label id="pi">Pi : </label>
-        </div>
-    </div>
-
-</div>
-{% endblock %}   
-		
-
-
-{% block script %}
-    <script src="https://code.jquery.com/jquery-3.6.0.slim.min.js" integrity="sha256-u7e5khyithlIdTpu22PHhENmPcRdFiHRjhAuHcs05RI=" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/fomantic-ui/2.8.8/components/slider.min.js"></script>
-    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.11.5/js/dataTables.semanticui.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.4.1/semantic.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/fomantic-ui/2.6.4/components/range.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.2.2/js/dataTables.buttons.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.semanticui.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.html5.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.print.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.colVis.min.js"></script>
-    <script src="{% static 'free/js/configuration-input.js' %}"></script>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    <script type='text/javascript'>
-        // PUT YOUR CUSTOM JAVASCRIPT HERE
-
-        // You can access apparatus_type config like this
-        config = JSON.parse(document.getElementById('execution-config').textContent);
-        console.log(config);
-        protocol = JSON.parse(document.getElementById('protocol-config').textContent)
-        console.log(protocol)
-        console.log({{apparatus_id}})
-
-
-
-        //if (config.name != '')
-        //    document.getElementById('name-of-exection').value = config.name;
-        //console.log(Object.keys(config.protocol.config.properties).length);
-
-        var exp_parameters = [];
-        if (protocol.properties !== null && Object.keys(protocol.properties).length > 1) {
-            for (let ii = 0; ii<Object.keys(protocol.properties).length;ii++ )
-            {
-                key = Object.keys(protocol.properties)[ii];
-                console.log(protocol.properties[key]);
-                exp_parameters[ii] = {"min_val": protocol.properties[key].minimum,"max_val":protocol.properties[key].maximum,"step": protocol.properties[key].multipleOf,"start": protocol.properties[key].default,"nome": key};
-            };
-
-            console.log(exp_parameters);
+    // should be defined for each experiment
+    function process_partial_data(data_line){
+        console.log("updating plot")
+        in_out = parseInt(data_line.value.circ) 
+        x = parseFloat(data_line.value.eX)
+        y = parseFloat(data_line.value.eY)
+        if (in_out != undefined){
+            myChart.data.datasets[in_out].data.push({
+                    x: x,
+                    y: y
+                });
+            myChart.update();
         }
-        // If the url contains execution id at the end, the execution information will be also injected into the page
-        execution_element = JSON.parse(document.getElementById('execution-config').textContent);
-        if (execution_element.status === 'F') {
-            // The execution is present
-            document.getElementById("createNew").style.display = null;
-            document.getElementById("deleteButton").style.display = null;
-            document.getElementById("saveNameButton").style.display = null;
-            document.getElementById("saveButton").style.display = "none";
-            document.getElementById("startButton").style.display = "none";
-            document.getElementById("clearButton").style.display = "none";
-            // console.log(execution.config)
-            final_result = document.getElementById('final-result');
-            finalresult = JSON.parse(final_result.textContent);
-            console.log('Final Result : ', finalresult.id);
-            if (final_result.id !== 'undefined') {
-                exp_parameters[0].start = execution_element.config.R;
-                exp_parameters[1].start = execution_element.config.Iteration;
-            }
-            else{
-
-            }
+        if(in_out == 1){
+            mc_point_in ++
         }
-        else if(execution_element.status === 'C'){
-            exp_parameters[0].start = execution_element.config.R;
-            exp_parameters[1].start = execution_element.config.Iteration;
-            document.getElementById('clearButton').setAttribute('onclick','deleteExecution()');
-        }
-        else
-        {
-            console.log("No execution in URL, this is probably a new execution");
-            // Here you will probably create the execution through the REST API
-        }
-        console.log({{protocol_id}})
-        const config_input = new ConfigurationInput("configuration-input");
+        mc_total_point ++
+        pi = 4* mc_point_in/mc_total_point
+        $("#mc_pi").text(pi)
+        $("#mc_point_in").text(mc_point_in)
+        $("#mc_total_point").text(mc_total_point)
+        
+    }
 
 
-    </script>
-
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/webrtc-adapter/8.0.0/adapter.min.js" ></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/spin.js/2.3.2/spin.min.js"></script>
-    <script type="text/javascript" src="{% static 'free/js/janus.js' %}" ></script>
-    <script type="text/javascript" src="{% static 'free/js/streaming_simple.js' %}"></script>
-    <script src="{% static 'free/js/build_results_montecarlo.js' %}"></script>
-    <script src="{% static 'free/js/buttonsFREE.js' %}"></script>
-    <script src="{% static 'free/js/tab_montecarlo.js' %}"></script>
+    // should be defined for each experiment
+    function process_final_data(data_line){
+        console.log("final updating plot")
+    }
     
+    function on_save_experiment_UI(){
+        R = parseInt(current_execution.config.R)
+        myChart.options.plugins = {
+                zoom: {
+                    limits: {
+                        y: {min: -current_execution.config.R, 
+                            max: current_execution.config.R},
+                        x: {min: -current_execution.config.R, 
+                            max: current_execution.config.R},
+                        },
+                    zoom: {
+                        wheel: {
+                            enabled: true,
+                        },
+                        pinch: {
+                            enabled: true
+                        },
+                        mode: 'xy',
+                        drag: {
+                            enabled: true,  
+                            modifierKey:	'alt'
+                        },
+                    },
+                    pan: {
+                        enabled: true,  
+                        modifierKey:	'ctrl'
+                    },
+                },
+                annotation: {
+                    annotations: {
+                        ellipse1: {
+                        type: 'ellipse',
+                        xMin: -current_execution.config.R,
+                        xMax: current_execution.config.R,
+                        yMin: -current_execution.config.R,
+                        yMax: current_execution.config.R,
+                        backgroundColor: 'rgba(100, 100, 100, 0.1)'
+                        }
+                    }
+                },
+                title: {
+                    display: true,
+                    text: 'Axis Center Positioning'
+                }
+            }
+        myChart.options.scales = {
+                x: {
+                    min: -current_execution.config.R,
+                    max: current_execution.config.R,
+                },
+                y: {
+                    min: -current_execution.config.R,
+                    max: current_execution.config.R,
+                }
+            }
+        
+        myChart.update();
+    }
+
+    function on_ready_experiment_UI(){
+
+        configure_slider("Iteration")
+        configure_slider("R")
+
+        R = parseInt(protocol_input_arguments.R.maximum)
+
+        ctx = document.getElementById('myChart');
+
+        myChart = new Chart(ctx, {
+            type: 'scatter',
+            data: {
+                datasets: [
+                    {
+                        label: 'OUT',
+                        data: [],
+                        pointBackgroundColor: "red",
+                        borderColor: "red",
+                        backgroundColor: "red",
+                        
+                    }, {
+                        label: 'IN',
+                        data: [],
+                        pointBackgroundColor: "green",
+                        borderColor: "green",
+                        backgroundColor: "green",
+                    },
+                ],
+            },
+            options: {
+                animation: false,
+                responsive: true,
+                plugins: {
+                    autocolors: false,
+                    title: {
+                        display: true,
+                        text: 'Axis Center Positioning'
+                    }
+                },
+                scales: {
+                    x: {
+                        min: -R,
+                        max: R,
+                    },
+                    y: {
+                        min: -R,
+                        max: R,
+                    }
+                }
+            },
+        });
+
+
+    }
+    function configure_slider(name){
+        $('#slider-'+name).slider({
+            min:  protocol_input_arguments[name].minimum,
+            max: protocol_input_arguments[name].maximum, 
+            step: protocol_input_arguments[name].multipleOf,
+            start: protocol_input_arguments[name].default,
+            input: '#'+name,
+            onChange: function(value) {
+                console.log("QQQQQQQQQQQQQQQQQQ "+value)
+                $('#'+name).prop("value", value)
+                onInputChanged()
+           }
+        })
+        $('#'+name).change(function() {
+            if($(this).val() > protocol_input_arguments[name].maximum)
+                $(this).prop("value", protocol_input_arguments[name].maximum)
+            if($(this).val() < protocol_input_arguments[name].minimum)
+                $(this).prop("value", protocol_input_arguments[name].minimum)
+            $("#slider-"+name).slider('set value', $(this).val())
+            });
+    }
+
+</script>
 {% endblock%}
-
-
